@@ -51,9 +51,9 @@ public:
  * t = 8
  * T[t][2^r]
  * per un totale di:
- * spazio: 32 * t * 2^r = 2^5 * 2^3 * 2^4 = 2^11 bits (2^6 = 64 interi)
+ * spazio: 32 * t * 2^r = 2^5 * 2^3 * 2^4 = 2^12 bits (2^7 = 128 interi)
  * tempo: 8 xor + 8 shift
- * 
+ *
  * Questa implementazine occupa molto meno spazio rispetto alla precedente, la quale aveva i seguenti parametri
  * r = 8
  * t = 4
@@ -61,7 +61,7 @@ public:
  * per un totale di:
  * spazio: 32 * t * 2^r = 2^5 * 2^2 * 2^8 = 2^15 bits (2^10 = 1024 interi)
  * tempo: 4 xor + 4 shift
-*/
+ */
 template <>
 class TabulationHash<uint32_t> : public Hash<uint32_t>
 {
@@ -109,8 +109,8 @@ public:
 };
 
 template <class T>
-class PairWiseHash : public Hash<T> {
-
+class PairWiseHash : public Hash<T>
+{
 };
 
 template <>
@@ -119,7 +119,7 @@ class PairWiseHash<uint32_t> : public Hash<uint32_t>
 private:
     uint64_t a;
     uint64_t b;
-    uint64_t M = 18446744073709550671;
+    uint64_t M = 18446744073709550671ull;
     uint64_t n;
 
 public:

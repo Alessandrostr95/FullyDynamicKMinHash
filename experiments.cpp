@@ -13,13 +13,15 @@ void experiment1();
 void experiment2();
 void experiment3();
 void experiment4(); // WIP
+void experiment5(); // WIP
 
 int main(int argc, char const *argv[])
 {
   // experiment1();
   // experiment2();
-  experiment3();
+  // experiment3();
   // experiment4();
+  experiment5();
   return 0;
 }
 
@@ -177,4 +179,39 @@ void experiment4()
   {
     testDSSProactiveQuery(c, size, n_query, n_hashes);
   }
+}
+
+/**
+ * @todo add documentation
+ */
+void experiment5()
+{
+  srand(time(NULL));
+
+  uint32_t U = UINT32_MAX;
+  // int N = 1 << 10;
+  int size = 1 << 16;
+  int n_hashes = 1000;
+  int l = 32;
+  int c = 1024;
+  int n_tests = 14;
+  float p = 0.9;
+
+  cout << "l-buffered k-minhash" << endl;
+
+#pragma omp parallel for
+  for (int i = 0; i < n_tests; i++)
+    testKLMinhashUpdatesAndQuery(n_hashes, l, U, size, p);
+
+  cout << "DSS Proactive" << endl;
+
+#pragma omp parallel for
+  for (int i = 0; i < n_tests; i++)
+    testDSSProactiveUpdatesAndQuery(c, size, n_hashes, p);
+
+  cout << "DSS" << endl;
+
+#pragma omp parallel for
+  for (int i = 0; i < n_tests; i++)
+    testDSSUpdatesAndQuery(c, size, n_hashes, p);
 }

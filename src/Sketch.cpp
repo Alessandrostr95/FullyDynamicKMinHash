@@ -7,7 +7,7 @@ class Sketch
 {
 public:
     void insert() {}
-    bool remove() {}
+    bool remove() { return false; }
 
     uint32_t *getSignature()
     {

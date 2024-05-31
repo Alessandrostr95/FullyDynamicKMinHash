@@ -152,7 +152,6 @@ void testDSSQuery(int c, int size, int n_query, int n_hashes)
     delete S;
 }
 
-
 /**
  * @todo add documentation
  * WIP
@@ -197,6 +196,142 @@ void testKLMinhashQuery(int l, int size, int n_query, int n_hashes)
     float t = (float)duration.count() / 1000000.0;
 
     printf("%d, %d, %u, %u, %f\n", n_hashes, l, size, n_query, t);
+
+    delete S;
+}
+
+/**
+ * @todo add documentation
+ * Exectute N insertions and N deletions in a DSS sketch.
+ * But a fraction `p` of the insertions and deletions are not executed.
+ * Instead of that, a query is executed.
+ */
+void testDSSUpdatesAndQuery(int c, int N, int n_hashes, float p, int start = 1000)
+{
+    DSS *S = new DSS(c, n_hashes);
+    int n_query = (int)(1 / p);
+
+    N = N - (int)p * N;
+
+    // int start = N;
+    for (int i = 0; i < start; i++)
+        S->insert(i);
+
+    auto start_time = high_resolution_clock::now();
+
+    for (int i = start; i < N + start; i++)
+    {
+        if (i % n_query == 0)
+            S->getSignature();
+
+        S->insert(i);
+    }
+
+    for (int i = start; i < N + start; i++)
+    {
+        if (i % n_query == 0)
+            S->getSignature();
+
+        S->remove(i);
+    }
+
+    auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start_time);
+    float t = (float)duration.count() / 1000000.0;
+
+    printf("%d, %d, %u, %d, %.2f, %f\n", c, S->k, 2 * N, n_hashes, p, t);
+
+    delete S;
+}
+
+/**
+ * @todo add documentation
+ * Exectute N insertions and N deletions in a DSSProactive sketch.
+ * But a fraction `p` of the insertions and deletions are not executed.
+ * Instead of that, a query is executed.
+ */
+void testDSSProactiveUpdatesAndQuery(int c, int N, int n_hashes, float p, int start = 1000)
+{
+    DSSProactive *S = new DSSProactive(c, n_hashes);
+    int n_query = (int)(1 / p);
+
+    N = N - (int)p * N;
+
+    // int start = N;
+    for (int i = 0; i < start; i++)
+        S->insert(i);
+
+    auto start_time = high_resolution_clock::now();
+
+    for (int i = start; i < N + start; i++)
+    {
+        if (i % n_query == 0)
+            S->getSignature();
+
+        S->insert(i);
+    }
+
+    for (int i = start; i < N + start; i++)
+    {
+        if (i % n_query == 0)
+            S->getSignature();
+
+        S->remove(i);
+    }
+
+    auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start_time);
+    float t = (float)duration.count() / 1000000.0;
+
+    printf("%d, %d, %u, %d, %.2f, %f\n", c, S->k, 2 * N, n_hashes, p, t);
+
+    delete S;
+}
+
+/**
+ * @todo add documentation
+ * Exectute N insertions and N deletions in a L-buffered K-minhash sketch.
+ * But a fraction `p` of the insertions and deletions are not executed.
+ * Instead of that, a query is executed.
+ */
+void testKLMinhashUpdatesAndQuery(int n_hashes, int l, uint32_t U, int N, float p, int start = 1000)
+{
+    TreeKLMinhash *S = new TreeKLMinhash(n_hashes, l, U, false);
+    int n_query = (int)(1 / p);
+
+    N = N - (int)p * N;
+
+    // int start = N;
+    for (int i = 0; i < start; i++)
+        S->insert(i);
+
+    int n_fault = 0;
+    auto start_time = high_resolution_clock::now();
+
+    for (int i = start; i < N + start; i++)
+    {
+        if (i % n_query == 0)
+            S->getSignature();
+
+        S->insert(i);
+    }
+
+    for (int i = start; i < N + start; i++)
+    {
+        if (i % n_query == 0)
+            S->getSignature();
+
+        int doFault = S->remove(i);
+        if (doFault)
+        {
+            n_fault++;
+            for (int j = i + 1; j < N; j++)
+                S->insert(j);
+        }
+    }
+
+    auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start_time);
+    float t = (float)duration.count() / 1000000.0;
+
+    printf("%d, %d, %u, %d, %.2f, %f\n", n_hashes, l, 2 * N, n_fault, p, t);
 
     delete S;
 }
