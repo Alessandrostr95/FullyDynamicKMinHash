@@ -195,7 +195,7 @@ void experiment5()
   int l = 32;
   int c = 1024;
   int n_tests = 14;
-  float p = 0.9;
+  float p = 0.1;
 
   cout << "l-buffered k-minhash" << endl;
 
