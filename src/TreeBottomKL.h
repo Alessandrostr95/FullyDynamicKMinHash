@@ -145,7 +145,8 @@ public:
         if (hx > this->delta)
             return false;
 
-        if (auto element = this->buffer.find(hx); element != this->buffer.end())
+        auto element = this->buffer.find(hx); 
+        if (element != this->buffer.end())
         {
             this->buffer.erase(element);
             this->buffer.insert(NUM_MAX);
@@ -168,7 +169,8 @@ public:
      */
     void fault()
     {
-        for (auto itr = this->elements.begin(); itr != this->elements.end(); ++itr)
+        auto itr = this->elements.begin();
+        for (; itr != this->elements.end(); ++itr)
             this->insert(*itr, false);
     }
 

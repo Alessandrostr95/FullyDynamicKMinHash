@@ -179,7 +179,8 @@ public:
             if (h > this->delta[i])
                 continue;
 
-            if (auto element = this->buffers[i]->find(h); element != this->buffers[i]->end())
+            auto element = this->buffers[i]->find(h);
+            if ( element != this->buffers[i]->end())
             {
                 this->buffers[i]->erase(element);
                 this->buffers[i]->insert(NUM_MAX);
@@ -205,7 +206,8 @@ public:
      */
     void fault()
     {
-        for (auto itr = this->elements.begin(); itr != this->elements.end(); ++itr)
+        auto itr = this->elements.begin();
+        for (; itr != this->elements.end(); ++itr)
             this->insert(*itr, false);
     }
 
