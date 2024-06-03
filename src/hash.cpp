@@ -81,7 +81,6 @@ public:
             #pragma omp simd
             for (int j = 0; j < 16; j++){
                 table[i][j] = uint_dist(rng);
-                printf("%u\n", table[i][j]);
                 }
     }
 
