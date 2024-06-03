@@ -80,7 +80,7 @@ public:
     {
         uint32_t res = 0;
         for (int i = 0; i < 8; i++)
-            res ^= table[i][(char)(x >> 4 * i)];
+            res ^= table[i][(uint8_t)(x >> 4 * i)];
         return res;
     }
 };
@@ -103,7 +103,7 @@ public:
     {
         uint64_t res = 0;
         for (int i = 0; i < 8; i++)
-            res ^= table[i][(char)(x >> 8 * i)];
+            res ^= table[i][(uint8_t)(x >> 8 * i)];
         return res;
     }
 };
