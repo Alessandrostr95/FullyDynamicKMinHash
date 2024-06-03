@@ -72,6 +72,7 @@ public:
     TabulationHash()
     {
         for (int i = 0; i < 8; i++)
+            #pragma omp simd
             for (int j = 0; j < 16; j++)
                 table[i][j] = rand();
     }
@@ -79,6 +80,7 @@ public:
     uint32_t operator()(uint32_t x)
     {
         uint32_t res = 0;
+        #pragma omp simd
         for (int i = 0; i < 8; i++)
             res ^= table[i][(uint8_t)(x >> 4 * i)];
         return res;
