@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <cstdint>
 #include <random>
-typedef std::mt19937 RNG;  // the Mersenne Twister with a popular choice of parameters
+typedef std::mt19937 RNG; // the Mersenne Twister with a popular choice of parameters
 
 using namespace std;
 
@@ -74,20 +74,17 @@ private:
 public:
     TabulationHash()
     {
-        std::random_device rd;  // Obtain a random seed from the hardware
+        std::random_device rd; // Obtain a random seed from the hardware
         RNG rng(rd());
-        std::uniform_int_distribution<uint32_t> uint_dist;         // by default range [0, MAX]
+        std::uniform_int_distribution<uint32_t> uint_dist; // by default range [0, MAX]
         for (int i = 0; i < 8; i++)
-            #pragma omp simd
-            for (int j = 0; j < 16; j++){
+            for (int j = 0; j < 16; j++)
                 table[i][j] = uint_dist(rng);
-                }
     }
 
     uint32_t operator()(uint32_t x)
     {
         uint32_t res = 0;
-        #pragma omp simd
         for (int i = 0; i < 8; i++)
             res ^= table[i][(uint8_t)(x >> 4 * i)];
         return res;
@@ -103,9 +100,9 @@ private:
 public:
     TabulationHash()
     {
-        std::random_device rd;  // Obtain a random seed from the hardware
-        RNG rng(rd());  // Create a generator instance with the seed
-        std::uniform_int_distribution<uint32_t> uint_dist;         // by default range [0, MAX]
+        std::random_device rd;                             // Obtain a random seed from the hardware
+        RNG rng(rd());                                     // Create a generator instance with the seed
+        std::uniform_int_distribution<uint32_t> uint_dist; // by default range [0, MAX]
         for (int i = 0; i < 8; i++)
             for (int j = 0; j < 256; j++)
                 table[i][j] = ((uint64_t)uint_dist(rng) << 32) | uint_dist(rng);
@@ -142,12 +139,13 @@ public:
 
     PairWiseHash(uint32_t n) : n(n)
     {
-        //RNG rng(1);
-        std::random_device rd;  // Obtain a random seed from the hardware
-        RNG rng(rd());  // Create a generator instance with the seed
-        std::uniform_int_distribution<uint32_t> uint_dist_n(0,n);         //  range [0, n]
+        // RNG rng(1);
+        std::random_device rd;                                         // Obtain a random seed from the hardware
+        RNG rng(rd());                                                 // Create a generator instance with the seed
+        std::uniform_int_distribution<uint32_t> uint_dist_n(0, n - 1); //  range [0, n]
         this->a = uint_dist_n(rng);
-        if (!this->a) this->a++;  // set a as non-zero value
+        if (!this->a)
+            this->a++; // set a as non-zero value
         this->b = uint_dist_n(rng);
     }
 

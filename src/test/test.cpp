@@ -13,39 +13,65 @@ void permute(int *a, int n)
     random_shuffle(a, a + n);
 }
 
+uint32_t *generate_random_sample(uint32_t N)
+{
+    unordered_set<uint32_t> values = unordered_set<uint32_t>(N);
+    std::random_device rd;                               // Obtain a random seed from the hardware
+    std::mt19937 rng(rd());                              // Create a generator instance with the seed
+    std::uniform_int_distribution<uint32_t> uint_dist_n; //  range [0, n]
+
+    uint32_t *sample = new uint32_t[N];
+    int i = 0;
+
+    while (i < N)
+    {
+        uint32_t x = uint_dist_n(rng);
+        if (values.insert(x).second)
+            sample[i++] = x;
+    }
+
+    return sample;
+}
+
 /**
  * @todo add documentation
  */
-void singleSetImplicit(int k, int l, uint32_t U, int N)
+void singleSetImplicit(int k, int l, int N)
 {
     int n_fault = 0;
-    TreeKLMinhash *S = new TreeKLMinhash(k, l, U, false);
+
+    TreeKLMinhash *S = new TreeKLMinhash(k, l, UINT32_MAX, false);
+    uint32_t *sample = generate_random_sample(N);
 
     auto start = high_resolution_clock::now();
 
     for (int i = 0; i < N; i++)
-        S->insert(i);
+        S->insert(sample[i]);
 
     for (int i = 0; i < N; i++)
     {
-        int doFault = S->remove(i);
+        int doFault = S->remove(sample[i]);
         if (doFault)
         {
             n_fault++;
+
+            // recovery query
             for (int j = i + 1; j < N; j++)
-                S->insert(j);
+                S->insert(sample[j]);
         }
     }
 
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("%d, %d, %u, %d, %f\n", k, l, 2 * N, n_fault, t);
+    printf("DMH, %d, %d, %u, %d, %f\n", k, l, 2 * N, n_fault, t);
 
     delete S;
+    delete[] sample;
 }
 
-/**
+/**00, 15.401396
+1024, 32, 131072, 1024, 0.20, 13.
  * @todo add documentation
  *
  * k: number of hash functions
@@ -89,20 +115,23 @@ void slidingWindowMinHash(int k, int l, uint32_t U, int N, int max_size)
 void testDSS(int c, int N)
 {
     DSS *S = new DSS(c);
+    uint32_t *sample = generate_random_sample(N);
 
     auto start = high_resolution_clock::now();
-    for (int i = 0; i < N; i++)
-        S->insert(i);
 
     for (int i = 0; i < N; i++)
-        S->remove(i);
+        S->insert(sample[i]);
+
+    for (int i = 0; i < N; i++)
+        S->remove(sample[i]);
 
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("%d, %d, %u, %f\n", c, S->k, 2 * N, t);
+    printf("DSS, %d, %d, %u, %f\n", c, S->k, 2 * N, t);
 
     delete S;
+    delete[] sample;
 }
 
 /**
@@ -112,20 +141,23 @@ void testDSSProactive(int c, int N, int n_hashes)
 {
 
     DSSProactive *S = new DSSProactive(c, n_hashes);
+    uint32_t *sample = generate_random_sample(N);
 
     auto start = high_resolution_clock::now();
-    for (int i = 0; i < N; i++)
-        S->insert(i);
 
     for (int i = 0; i < N; i++)
-        S->remove(i);
+        S->insert(sample[i]);
+
+    for (int i = 0; i < N; i++)
+        S->remove(sample[i]);
 
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("%d, %d, %u, %d, %f\n", c, S->k, 2 * N, n_hashes, t);
+    printf("DSSp, %d, %d, %u, %f\n", c, S->k, 2 * N, t);
 
     delete S;
+    delete[] sample;
 }
 
 /**
@@ -135,9 +167,10 @@ void testDSSProactive(int c, int N, int n_hashes)
 void testDSSQuery(int c, int size, int n_query, int n_hashes)
 {
     DSS *S = new DSS(c, n_hashes);
+    uint32_t *sample = generate_random_sample(size);
 
     for (int i = 0; i < size; i++)
-        S->insert(i);
+        S->insert(sample[i]);
 
     auto start = high_resolution_clock::now();
 
@@ -147,9 +180,10 @@ void testDSSQuery(int c, int size, int n_query, int n_hashes)
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("%d, %d, %u, %u, %d, %f\n", c, S->k, size, n_query, n_hashes, t);
+    printf("DSS, %d, %d, %u, %u, %d, %f\n", c, S->k, size, n_query, n_hashes, t);
 
     delete S;
+    delete[] sample;
 }
 
 /**
@@ -159,9 +193,10 @@ void testDSSQuery(int c, int size, int n_query, int n_hashes)
 void testDSSProactiveQuery(int c, int size, int n_query, int n_hashes)
 {
     DSSProactive *S = new DSSProactive(c, n_hashes);
+    uint32_t *sample = generate_random_sample(size);
 
     for (int i = 0; i < size; i++)
-        S->insert(i);
+        S->insert(sample[i]);
 
     auto start = high_resolution_clock::now();
 
@@ -171,9 +206,10 @@ void testDSSProactiveQuery(int c, int size, int n_query, int n_hashes)
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("%d, %d, %u, %u, %d, %f\n", c, S->k, size, n_query, n_hashes, t);
+    printf("DSSp, %d, %d, %u, %u, %d, %f\n", c, S->k, size, n_query, n_hashes, t);
 
     delete S;
+    delete[] sample;
 }
 
 /**
@@ -183,9 +219,10 @@ void testDSSProactiveQuery(int c, int size, int n_query, int n_hashes)
 void testKLMinhashQuery(int l, int size, int n_query, int n_hashes)
 {
     TreeKLMinhash *S = new TreeKLMinhash(n_hashes, l, UINT32_MAX, false);
+    uint32_t *sample = generate_random_sample(size);
 
     for (int i = 0; i < size; i++)
-        S->insert(i);
+        S->insert(sample[i]);
 
     auto start = high_resolution_clock::now();
     for (int i = 0; i < n_query; i++)
@@ -195,9 +232,10 @@ void testKLMinhashQuery(int l, int size, int n_query, int n_hashes)
 
     float t = (float)duration.count() / 1000000.0;
 
-    printf("%d, %d, %u, %u, %f\n", n_hashes, l, size, n_query, t);
+    printf("DMH, %d, %d, %u, %u, %f\n", n_hashes, l, size, n_query, t);
 
     delete S;
+    delete[] sample;
 }
 
 /**
@@ -206,16 +244,17 @@ void testKLMinhashQuery(int l, int size, int n_query, int n_hashes)
  * But a fraction `p` of the insertions and deletions are not executed.
  * Instead of that, a query is executed.
  */
-void testDSSUpdatesAndQuery(int c, int N, int n_hashes, float p, int start = 1000)
+void testDSSUpdatesAndQuery(int c, int N, int n_hashes, float p, int start = 1)
 {
     DSS *S = new DSS(c, n_hashes);
+    uint32_t *sample = generate_random_sample(N + start);
+
     int n_query = (int)(1 / p);
 
     N = N - (int)p * N;
 
-    // int start = N;
     for (int i = 0; i < start; i++)
-        S->insert(i);
+        S->insert(sample[i]);
 
     auto start_time = high_resolution_clock::now();
 
@@ -224,7 +263,7 @@ void testDSSUpdatesAndQuery(int c, int N, int n_hashes, float p, int start = 100
         if (i % n_query == 0)
             S->getSignature();
 
-        S->insert(i);
+        S->insert(sample[i]);
     }
 
     for (int i = start; i < N + start; i++)
@@ -232,15 +271,16 @@ void testDSSUpdatesAndQuery(int c, int N, int n_hashes, float p, int start = 100
         if (i % n_query == 0)
             S->getSignature();
 
-        S->remove(i);
+        S->remove(sample[i]);
     }
 
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start_time);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("%d, %d, %u, %d, %.2f, %f\n", c, S->k, 2 * N, n_hashes, p, t);
+    printf("DSS, %d, %d, %u, %d, %.2f, %f\n", c, S->k, 2 * N, n_hashes, p, t);
 
     delete S;
+    delete[] sample;
 }
 
 /**
@@ -249,16 +289,17 @@ void testDSSUpdatesAndQuery(int c, int N, int n_hashes, float p, int start = 100
  * But a fraction `p` of the insertions and deletions are not executed.
  * Instead of that, a query is executed.
  */
-void testDSSProactiveUpdatesAndQuery(int c, int N, int n_hashes, float p, int start = 1000)
+void testDSSProactiveUpdatesAndQuery(int c, int N, int n_hashes, float p, int start = 1)
 {
     DSSProactive *S = new DSSProactive(c, n_hashes);
+    uint32_t *sample = generate_random_sample(N + start);
+
     int n_query = (int)(1 / p);
 
     N = N - (int)p * N;
 
-    // int start = N;
     for (int i = 0; i < start; i++)
-        S->insert(i);
+        S->insert(sample[i]);
 
     auto start_time = high_resolution_clock::now();
 
@@ -267,7 +308,7 @@ void testDSSProactiveUpdatesAndQuery(int c, int N, int n_hashes, float p, int st
         if (i % n_query == 0)
             S->getSignature();
 
-        S->insert(i);
+        S->insert(sample[i]);
     }
 
     for (int i = start; i < N + start; i++)
@@ -275,15 +316,16 @@ void testDSSProactiveUpdatesAndQuery(int c, int N, int n_hashes, float p, int st
         if (i % n_query == 0)
             S->getSignature();
 
-        S->remove(i);
+        S->remove(sample[i]);
     }
 
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start_time);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("%d, %d, %u, %d, %.2f, %f\n", c, S->k, 2 * N, n_hashes, p, t);
+    printf("DSSp, %d, %d, %u, %d, %.2f, %f\n", c, S->k, 2 * N, n_hashes, p, t);
 
     delete S;
+    delete[] sample;
 }
 
 /**
@@ -292,16 +334,17 @@ void testDSSProactiveUpdatesAndQuery(int c, int N, int n_hashes, float p, int st
  * But a fraction `p` of the insertions and deletions are not executed.
  * Instead of that, a query is executed.
  */
-void testKLMinhashUpdatesAndQuery(int n_hashes, int l, uint32_t U, int N, float p, int start = 1000)
+void testKLMinhashUpdatesAndQuery(int n_hashes, int l, int N, float p, int start = 1)
 {
-    TreeKLMinhash *S = new TreeKLMinhash(n_hashes, l, U, false);
+    TreeKLMinhash *S = new TreeKLMinhash(n_hashes, l, UINT32_MAX, false);
+    uint32_t *sample = generate_random_sample(N + start);
+
     int n_query = (int)(1 / p);
 
     N = N - (int)p * N;
 
-    // int start = N;
     for (int i = 0; i < start; i++)
-        S->insert(i);
+        S->insert(sample[i]);
 
     int n_fault = 0;
     auto start_time = high_resolution_clock::now();
@@ -311,7 +354,7 @@ void testKLMinhashUpdatesAndQuery(int n_hashes, int l, uint32_t U, int N, float 
         if (i % n_query == 0)
             S->getSignature();
 
-        S->insert(i);
+        S->insert(sample[i]);
     }
 
     for (int i = start; i < N + start; i++)
@@ -319,19 +362,22 @@ void testKLMinhashUpdatesAndQuery(int n_hashes, int l, uint32_t U, int N, float 
         if (i % n_query == 0)
             S->getSignature();
 
-        int doFault = S->remove(i);
+        int doFault = S->remove(sample[i]);
         if (doFault)
         {
             n_fault++;
+
+            // recovery query
             for (int j = i + 1; j < N; j++)
-                S->insert(j);
+                S->insert(sample[j]);
         }
     }
 
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start_time);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("%d, %d, %u, %d, %.2f, %f\n", n_hashes, l, 2 * N, n_fault, p, t);
+    printf("DMH, %d, %d, %u, %d, %.2f, %f\n", n_hashes, l, 2 * N, n_fault, p, t);
 
     delete S;
+    delete[] sample;
 }
