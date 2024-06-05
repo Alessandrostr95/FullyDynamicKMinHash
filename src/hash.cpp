@@ -82,6 +82,8 @@ public:
                 table[i][j] = uint_dist(rng);
     }
 
+    ~TabulationHash() {}
+
     uint32_t operator()(uint32_t x)
     {
         uint32_t res = 0;
@@ -148,6 +150,8 @@ public:
             this->a++; // set a as non-zero value
         this->b = uint_dist_n(rng);
     }
+
+    ~PairWiseHash() {}
 
     uint32_t operator()(uint32_t x)
     {

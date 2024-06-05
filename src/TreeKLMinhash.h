@@ -48,6 +48,8 @@ private:
      */
     Hash<num> **hashes;
 
+    bool doFreeHashes = true;
+
     /**
      * signature: the minhash signature.
      */
@@ -71,21 +73,21 @@ public:
     TreeKLMinhash(int k, int l, num U, bool explicitSet = true)
     {
         // PairWiseHash<num> *hashes = new PairWiseHash<num>[k];
-        
+
         // PairWiseHash<num> **hashes = (PairWiseHash<num> **)malloc(k * sizeof(PairWiseHash<num> *));
         TabulationHash<num> **hashes = (TabulationHash<num> **)malloc(k * sizeof(TabulationHash<num> *));
         for (int i = 0; i < k; i++)
             // hashes[i] = new PairWiseHash<num>(U);
             hashes[i] = new TabulationHash<num>();
 
-        new (this) TreeKLMinhash(k, l, U, (Hash<num> **)hashes, explicitSet);
+        new (this) TreeKLMinhash(k, l, U, (Hash<num> **)hashes, explicitSet, true);
     }
 
     /**
      * Constructor
      */
-    TreeKLMinhash(int k, int l, num U, Hash<num> **hashes, bool explicitSet = true)
-        : k(k), l(l), U(U), hashes(hashes), explicitSet(explicitSet)
+    TreeKLMinhash(int k, int l, num U, Hash<num> **hashes, bool explicitSet = true, bool doFreeHashes = false)
+        : k(k), l(l), U(U), hashes(hashes), explicitSet(explicitSet), doFreeHashes(doFreeHashes)
     {
         // this->hashes = new std::pair<num, num>[k];
         this->buffers = (multiset<num> **)malloc(k * sizeof(multiset<num> *));
@@ -110,12 +112,17 @@ public:
     {
         for (int i = 0; i < k; i++)
             delete this->buffers[i];
-        delete this->buffers;
-        // free(this->buffers);
-        delete this->delta;
-        // free(this->delta);
-        delete this->signature;
-        // free(this->signature);
+        delete[] this->buffers;
+        delete[] this->delta;
+        delete[] this->signature;
+
+        if (doFreeHashes)
+        {
+            for (int i = 0; i < k; i++)
+                delete this->hashes[i];
+
+            delete[] this->hashes;
+        }
     }
 
     /**
@@ -180,7 +187,7 @@ public:
                 continue;
 
             auto element = this->buffers[i]->find(h);
-            if ( element != this->buffers[i]->end())
+            if (element != this->buffers[i]->end())
             {
                 this->buffers[i]->erase(element);
                 this->buffers[i]->insert(NUM_MAX);
@@ -224,16 +231,16 @@ public:
     /**
      * Static method that given two sketches (TreeKLMinhash) A & B returns the estimation of their jaccard similarity.
      */
-    static float similarity(TreeKLMinhash *A, TreeKLMinhash *B)
+    static double similarity(TreeKLMinhash *A, TreeKLMinhash *B)
     {
         num *sigA = A->getSignature();
         num *sigB = B->getSignature();
 
         int k = A->k;
-        float c = .0;
+        double c = .0;
         for (int i = 0; i < k; i++)
             c += sigA[i] == sigB[i];
-        return c / k;
+        return c / static_cast<double>(k);
     }
 
     /**

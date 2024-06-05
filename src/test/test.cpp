@@ -3,6 +3,7 @@
 #include "../DSSProactive.cpp"
 #include "../TreeBottomKL.h"
 #include "../LSH.cpp"
+#include "../BitArray.cpp"
 #include <algorithm>
 #include <chrono>
 using namespace std::chrono;
@@ -380,4 +381,63 @@ void testKLMinhashUpdatesAndQuery(int n_hashes, int l, int N, float p, int start
 
     delete S;
     delete[] sample;
+}
+
+double SE_DMH(int k, int l, uint32_t U, double p1, double p2, Hash<uint32_t> **hashes)
+{
+    TreeKLMinhash *SA = new TreeKLMinhash(k, l, UINT32_MAX, hashes, false);
+    TreeKLMinhash *SB = new TreeKLMinhash(k, l, UINT32_MAX, hashes, false);
+
+    __type *A = create(U, 0.05);
+    __type *B = perturbate(A, U, p1, p2);
+
+    for (int i = 0; i < U; i++)
+    {
+        if (get(A, i) == 1)
+            SA->insert(i);
+        if (get(B, i) == 1)
+            SB->insert(i);
+    }
+
+    double estimation = TreeKLMinhash::similarity(SA, SB);
+    double js = jaccard_sim(A, B, U);
+    double err = estimation - js;
+
+    delete SA;
+    delete SB;
+    delete[] A;
+    delete[] B;
+
+    return err * err;
+}
+
+double SE_DSS(int c, int k, uint32_t U, double p1, double p2, Hash<uint32_t> **hashes, Hash<uint32_t> *h1, Hash<uint32_t> *h2)
+{
+    DSS *SA = new DSS(c, h1, h2, hashes, k);
+    DSS *SB = new DSS(c, h1, h2, hashes, k);
+
+    __type *A = create(U, 0.05);
+    __type *B = perturbate(A, U, p1, p2);
+
+    for (int i = 0; i < U; i++)
+    {
+        if (get(A, i) == 1)
+            SA->insert(i);
+        if (get(B, i) == 1)
+            SB->insert(i);
+    }
+
+    double alpha = .1;
+    double r = .25;
+
+    double estimation = DSS::similarity(SA, SB, alpha, r);
+    double js = jaccard_sim(A, B, U);
+    double err = estimation - js;
+
+    delete SA;
+    delete SB;
+    delete[] A;
+    delete[] B;
+
+    return err * err;
 }

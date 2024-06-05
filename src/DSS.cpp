@@ -67,6 +67,8 @@ public:
      */
     Hash<uint32_t> **hashes;
 
+    bool doFreeHashes = true;
+
     /**
      * signature: the t-minhash signature of the sketch
      */
@@ -85,14 +87,14 @@ public:
         for (int i = 0; i < t; i++)
             hashes[i] = new PairWiseHash<uint32_t>(UINT32_MAX);
 
-        new (this) DSS(c, h1, h2, (Hash<uint32_t> **)hashes, t);
+        new (this) DSS(c, h1, h2, (Hash<uint32_t> **)hashes, t, true);
     }
 
     /**
      * Constructor
      */
-    DSS(uint32_t c, Hash<uint32_t> *h1, Hash<uint32_t> *h2, Hash<uint32_t> **hashes, int t)
-        : size(0), U(UINT32_MAX), c(c), h1(h1), h2(h2), hashes(hashes), t(t)
+    DSS(uint32_t c, Hash<uint32_t> *h1, Hash<uint32_t> *h2, Hash<uint32_t> **hashes, int t, bool doFreeHashes = false)
+        : size(0), U(UINT32_MAX), c(c), h1(h1), h2(h2), hashes(hashes), t(t), doFreeHashes(doFreeHashes)
     {
         k = (int)floor(log2(U)) + 1;
         this->T = (uint32_t **)malloc(k * sizeof(uint32_t *));
@@ -111,9 +113,18 @@ public:
     ~DSS()
     {
         for (int i = 0; i < this->k; i++)
-            delete this->T[i];
-        delete this->T;
-        delete this->signature;
+            delete []this->T[i];
+        delete[] this->T;
+        delete[] this->signature;
+
+        if (this->doFreeHashes)
+        {
+            for (int i = 0; i < this->k; i++)
+                delete this->hashes[i];
+            delete[] this->hashes;
+            delete this->h1;
+            delete this->h2;
+        }
     }
 
     /**

@@ -13,8 +13,9 @@ using namespace std;
 void experiment1();
 void experiment2();
 void experiment3();
-void experiment4(); // WIP
-void experiment5(); // WIP
+void experiment4();
+void experiment5();
+void experiment6();
 
 int main(int argc, char const *argv[])
 {
@@ -23,25 +24,28 @@ int main(int argc, char const *argv[])
   // experiment3();
   // experiment4();
   // experiment5();
+  experiment6();
 
-  uint32_t U = 1000000;
-  float p = 0.01;
-  __type *A = create(U, p);
-  cout << count_one(A, U) << " : " << U * p << endl;
+  // uint32_t U = 1000000;
+  // float p = 0.01;
+  // __type *A = create(U, p);
+  // cout << count_one(A, U) << " : " << U * p << endl;
 
-  uint32_t c = 0;
-  for (int i = 0; i < U; i++)
-    c += get(A, i);
-  cout << c << endl;
+  // uint32_t c = 0;
+  // for (int i = 0; i < U; i++)
+  //   c += get(A, i);
+  // cout << c << endl;
 
-  float p1 = 0.005;
-  float p2 = 0.01;
-  __type *B = perturbate(A, U, p1, p2);
+  // float p1 = 0.005;
+  // float p2 = 0.01;
+  // __type *B = perturbate(A, U, p1, p2);
 
-  uint32_t sizeA = count_one(A, U);
-  uint32_t sizeB = count_one(B, U);
+  // uint32_t sizeA = count_one(A, U);
+  // uint32_t sizeB = count_one(B, U);
 
-  cout << sizeB << " " << sizeA - sizeA * p1 + (U - sizeA) * p2 << endl;
+  // cout << sizeB << " " << sizeA - sizeA * p1 + (U - sizeA) * p2 << endl;
+
+  // cout << jaccard_sim(A, B, U) << endl;
 
   return 0;
 }
@@ -220,4 +224,63 @@ void experiment5()
   for (int i = 0; i < 9; i++)
     for (int n = 0; n < n_tests; n++)
       testDSSUpdatesAndQuery(c, size, n_hashes, p[i]);
+}
+
+void experiment6()
+{
+  map<float, pair<float, float>> params{
+      {0.1, {0.8183, 0.043}},
+      {0.15, {0.73885, 0.039}},
+      {0.2, {0.667, 0.035}},
+      {0.25, {0.598, 0.032}},
+      {0.3, {0.5404, 0.028}},
+      {0.35, {0.48375, 0.025}},
+      {0.4, {0.4252, 0.023}},
+      {0.45, {0.379, 0.02}},
+      {0.5, {0.329, 0.018}},
+      {0.55, {0.29325, 0.015}},
+      {0.6, {0.2518, 0.013}},
+      {0.65, {0.21415, 0.011}},
+      {0.7, {0.1803, 0.009}},
+      {0.75, {0.136, 0.008}},
+      {0.8, {0.1088, 0.006}},
+      {0.85, {0.0854, 0.004}},
+      {0.9, {0.0487, 0.003}},
+  };
+
+  int k = 1024;
+  int c = 1024;
+  int l = 32;
+  int U = 100000;
+  int n_test = 1000;
+
+  TabulationHash<uint32_t> **hashes = (TabulationHash<uint32_t> **)malloc(k * sizeof(TabulationHash<uint32_t> *));
+  for (int i = 0; i < k; i++)
+    hashes[i] = new TabulationHash<uint32_t>();
+
+  PairWiseHash<uint32_t> *h1 = new PairWiseHash<uint32_t>();
+  PairWiseHash<uint32_t> *h2 = new PairWiseHash<uint32_t>(c);
+
+  cout << "sim, DMH, DSS" << endl;
+
+  for (auto itr = params.begin(); itr != params.end(); itr++)
+  {
+    float j = itr->first;
+    float p1 = itr->second.first;
+    float p2 = itr->second.second;
+
+    double err_DMH = 0.0;
+    double err_DSS = 0.0;
+
+#pragma omp parallel for reduction(+ : err_DMH, err_DSS)
+    for (int n = 0; n < n_test; n++)
+    {
+      err_DMH += SE_DMH(k, l, U, p1, p2, (Hash<uint32_t> **)hashes);
+      err_DSS += SE_DSS(c, c, U, p1, p2, (Hash<uint32_t> **)hashes, (Hash<uint32_t> *)h1, (Hash<uint32_t> *)h2);
+    }
+
+    err_DMH = sqrt(err_DMH / (double)n_test);
+    err_DSS = sqrt(err_DSS / (double)n_test);
+    printf("%f, %f, %f\n", j, err_DMH, err_DSS);
+  }
 }

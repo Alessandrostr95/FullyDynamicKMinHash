@@ -1,3 +1,6 @@
+#ifndef BITARRAY_H
+#define BITARRAY_H
+
 #include <cstdint>
 #include <stdlib.h>
 #include <cstring>
@@ -104,3 +107,5 @@ double jaccard_sim(__type *A, __type *B, uint32_t U)
 {
     return static_cast<double>(size_intersection(A, B, U)) / static_cast<double>(size_union(A, B, U));
 }
+
+#endif
