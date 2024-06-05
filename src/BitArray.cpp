@@ -79,3 +79,28 @@ __type *perturbate(__type *array, uint32_t U, float p1, float p2)
     }
     return brray;
 }
+
+uint32_t size_intersection(__type *A, __type *B, uint32_t U)
+{
+    uint32_t size = U / sizeof(__type) + 1;
+
+    uint32_t result = 0;
+    for (int i = 0; i < size; i++)
+        result += _mm_popcnt_u64(A[i] & B[i]);
+    return result;
+}
+
+uint32_t size_union(__type *A, __type *B, uint32_t U)
+{
+    uint32_t size = U / sizeof(__type) + 1;
+
+    uint32_t result = 0;
+    for (int i = 0; i < size; i++)
+        result += _mm_popcnt_u64(A[i] | B[i]);
+    return result;
+}
+
+double jaccard_sim(__type *A, __type *B, uint32_t U)
+{
+    return static_cast<double>(size_intersection(A, B, U)) / static_cast<double>(size_union(A, B, U));
+}
