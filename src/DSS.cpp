@@ -119,7 +119,7 @@ public:
 
         if (this->doFreeHashes)
         {
-            for (int i = 0; i < this->k; i++)
+            for (int i = 0; i < this->t; i++)
                 delete this->hashes[i];
             delete[] this->hashes;
             delete this->h1;
