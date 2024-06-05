@@ -86,7 +86,7 @@ public:
     {
         uint32_t res = 0;
         for (int i = 0; i < 8; i++)
-            res ^= table[i][(uint8_t)(x >> 4 * i)];
+            res ^= table[i][(uint8_t)((x >> 4 * i) & 0b00001111]; // added the end with binary 00001111 to slip the 4 least significant bits
         return res;
     }
 };
