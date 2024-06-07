@@ -23,8 +23,8 @@ int main(int argc, char const *argv[])
   // experiment2();
   // experiment3();
   // experiment4();
-  // experiment5();
-  experiment6();
+  experiment5();
+  // experiment6();
 
   // uint32_t U = 1000000;
   // float p = 0.01;
@@ -174,21 +174,15 @@ void experiment4()
   int n_query = 1 << 16;
   int n_tests = 14;
 
-  cout << "l-buffered k-minhash" << endl;
-
 #pragma omp parallel for collapse(2)
   for (int i = 0; i < 6; i++)
     for (int n = 0; n < n_tests; n++)
       testKLMinhashQuery(l, size, n_query, K[i]);
 
-  cout << "DSS" << endl;
-
 #pragma omp parallel for collapse(2)
   for (int i = 0; i < 6; i++)
     for (int n = 0; n < n_tests; n++)
       testDSSQuery(K[i], size, n_query, K[i]);
-
-  cout << "DSS Proactive" << endl;
 
 #pragma omp parallel for collapse(2)
   for (int i = 0; i < 6; i++)
@@ -203,25 +197,27 @@ void experiment5()
 {
   srand(time(NULL));
 
-  int size = 1 << 16;
+  int size = 1 << 14;
   int n_hashes = 1024;
   int l = 32;
   int c = 1024;
   int n_tests = 100;
-  float p[9] = {0, .005, .01, .05, .1, .15, .2, .25, .3};
+  float p[15] = {0.001, .005, .01, .05, .1, .15, .2, .25, .3, .35, .40, .45, .5, .55, .6};
+
+  cout << "sketch,k,l,N,n_hash,faults,p,time" << endl;
 
 #pragma omp parallel for collapse(2)
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < 15; i++)
     for (int n = 0; n < n_tests; n++)
       testKLMinhashUpdatesAndQuery(n_hashes, l, size, p[i]);
 
 #pragma omp parallel for collapse(2)
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < 15; i++)
     for (int n = 0; n < n_tests; n++)
       testDSSProactiveUpdatesAndQuery(c, size, n_hashes, p[i]);
-
+  
 #pragma omp parallel for collapse(2)
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < 15; i++)
     for (int n = 0; n < n_tests; n++)
       testDSSUpdatesAndQuery(c, size, n_hashes, p[i]);
 }

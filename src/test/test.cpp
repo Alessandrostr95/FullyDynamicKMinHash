@@ -278,7 +278,7 @@ void testDSSUpdatesAndQuery(int c, int N, int n_hashes, float p, int start = 1)
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start_time);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("DSS, %d, %d, %u, %d, %.2f, %f\n", c, S->k, 2 * N, n_hashes, p, t);
+    printf("DSS, %d, %d, %u, %d, 0, %.2f, %f\n", c, S->k, 2 * N, n_hashes, p, t);
 
     delete S;
     delete[] sample;
@@ -323,7 +323,7 @@ void testDSSProactiveUpdatesAndQuery(int c, int N, int n_hashes, float p, int st
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start_time);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("DSSp, %d, %d, %u, %d, %.2f, %f\n", c, S->k, 2 * N, n_hashes, p, t);
+    printf("DSSp, %d, %d, %u, %d, 0, %.2f, %f\n", c, S->k, 2 * N, n_hashes, p, t);
 
     delete S;
     delete[] sample;
@@ -377,7 +377,7 @@ void testKLMinhashUpdatesAndQuery(int n_hashes, int l, int N, float p, int start
     auto duration = duration_cast<microseconds>(high_resolution_clock::now() - start_time);
     float t = (float)duration.count() / 1000000.0;
 
-    printf("DMH, %d, %d, %u, %d, %.2f, %f\n", n_hashes, l, 2 * N, n_fault, p, t);
+    printf("DMH, %d, %d, %u, %d, %d, %.2f, %f\n", n_hashes, l, 2 * N, n_hashes, n_fault, p, t);
 
     delete S;
     delete[] sample;
