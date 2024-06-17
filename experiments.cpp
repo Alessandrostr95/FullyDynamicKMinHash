@@ -23,8 +23,8 @@ int main(int argc, char const *argv[])
   // experiment2();
   // experiment3();
   // experiment4();
-  experiment5();
-  // experiment6();
+  // experiment5();
+  experiment6();
 
   // uint32_t U = 1000000;
   // float p = 0.01;
@@ -215,7 +215,7 @@ void experiment5()
   for (int i = 0; i < 15; i++)
     for (int n = 0; n < n_tests; n++)
       testDSSProactiveUpdatesAndQuery(c, size, n_hashes, p[i]);
-  
+
 #pragma omp parallel for collapse(2)
   for (int i = 0; i < 15; i++)
     for (int n = 0; n < n_tests; n++)
@@ -246,18 +246,20 @@ void experiment6()
 
   int k = 1024;
   int c = 1024;
-  int l = 32;
-  int U = 100000;
-  int n_test = 1000;
+  // int l = 32;
+  int U = 1 << 17;
+  int l = 17;
+  int n_test = 100;
 
-  TabulationHash<uint32_t> **hashes = (TabulationHash<uint32_t> **)malloc(k * sizeof(TabulationHash<uint32_t> *));
-  for (int i = 0; i < k; i++)
+  TabulationHash<uint32_t> **hashes = (TabulationHash<uint32_t> **)malloc((k * l) * sizeof(TabulationHash<uint32_t> *));
+  for (int i = 0; i < (k * l); i++)
     hashes[i] = new TabulationHash<uint32_t>();
 
+  // PairWiseHash<uint32_t> *h1 = new PairWiseHash<uint32_t>();
   PairWiseHash<uint32_t> *h1 = new PairWiseHash<uint32_t>();
   PairWiseHash<uint32_t> *h2 = new PairWiseHash<uint32_t>(c);
 
-  cout << "sim, DMH, DSS" << endl;
+  cout << "sim,DMH,DSS,min_hash" << endl;
 
   for (auto itr = params.begin(); itr != params.end(); itr++)
   {
@@ -267,16 +269,21 @@ void experiment6()
 
     double err_DMH = 0.0;
     double err_DSS = 0.0;
+    double err_min_hash = 0.0;
 
-#pragma omp parallel for reduction(+ : err_DMH, err_DSS)
+#pragma omp parallel for //reduction(+ : err_DMH, err_DSS)
     for (int n = 0; n < n_test; n++)
     {
-      err_DMH += SE_DMH(k, l, U, p1, p2, (Hash<uint32_t> **)hashes);
-      err_DSS += SE_DSS(c, c, U, p1, p2, (Hash<uint32_t> **)hashes, (Hash<uint32_t> *)h1, (Hash<uint32_t> *)h2);
+      err_DMH = SE_DMH(k, l, U, p1, p2, (Hash<uint32_t> **)hashes);
+      err_DSS = SE_DSS(c, c, U, p1, p2, (Hash<uint32_t> **)hashes, (Hash<uint32_t> *)h1, (Hash<uint32_t> *)h2);
+      err_min_hash = SE_DMH(k * l, 1, U, p1, p2, (Hash<uint32_t> **)hashes);
+
+      printf("%f, %f, %f, %f\n", j, err_DMH, err_DSS, err_min_hash);
     }
 
-    err_DMH = sqrt(err_DMH / (double)n_test);
-    err_DSS = sqrt(err_DSS / (double)n_test);
-    printf("%f, %f, %f\n", j, err_DMH, err_DSS);
+    // err_DMH = sqrt(err_DMH / (double)n_test);
+    // err_DSS = sqrt(err_DSS / (double)n_test);
+    // err_min_hash = sqrt(err_min_hash / (double)n_test);
+    // printf("%f, %f, %f, %f\n", j, err_DMH, err_DSS, err_min_hash);
   }
 }
