@@ -413,8 +413,8 @@ double SE_DMH(int k, int l, uint32_t U, double p1, double p2, Hash<uint32_t> **h
 
 double SE_DSS(int c, int k, uint32_t U, double p1, double p2, Hash<uint32_t> **hashes, Hash<uint32_t> *h1, Hash<uint32_t> *h2)
 {
-    DSS *SA = new DSS(c, h1, h2, hashes, k);
-    DSS *SB = new DSS(c, h1, h2, hashes, k);
+    DSS *SA = new DSS(c, h1, h2, hashes, k, false);
+    DSS *SB = new DSS(c, h1, h2, hashes, k, false);
 
     __type *A = create(U, 0.05);
     __type *B = perturbate(A, U, p1, p2);

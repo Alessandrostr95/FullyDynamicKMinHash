@@ -85,7 +85,7 @@ public:
 
         PairWiseHash<uint32_t> **hashes = (PairWiseHash<uint32_t> **)malloc(t * sizeof(PairWiseHash<uint32_t> *));
         for (int i = 0; i < t; i++)
-            hashes[i] = new PairWiseHash<uint32_t>(UINT32_MAX);
+            hashes[i] = new PairWiseHash<uint32_t>();
 
         new (this) DSS(c, h1, h2, (Hash<uint32_t> **)hashes, t, true);
     }
@@ -113,7 +113,7 @@ public:
     ~DSS()
     {
         for (int i = 0; i < this->k; i++)
-            delete []this->T[i];
+            delete[] this->T[i];
         delete[] this->T;
         delete[] this->signature;
 
