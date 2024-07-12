@@ -77,6 +77,8 @@ unordered_set<pair<int, int>, hash_pair> *computeLSH(uint32_t **signatures, int 
         // }
         // cout << endl;
 
+        // cout << "BAND: " << j << endl;
+
         for (auto key = seenKeys[j].begin(); key != seenKeys[j].end(); key++)
         {
             int bucket_index = H[j].bucket(*key);

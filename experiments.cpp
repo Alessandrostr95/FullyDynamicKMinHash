@@ -7,6 +7,10 @@
 #include <algorithm>
 #include <cstdint>
 #include <omp.h>
+#include "src/Utils.cpp"
+
+#include "src/TreeKLMinhash.h"
+#include "src/DSS.cpp"
 
 using namespace std;
 
@@ -16,6 +20,7 @@ void experiment3();
 void experiment4();
 void experiment5();
 void experiment6();
+void experiment7(string, double, int, int);
 
 int main(int argc, char const *argv[])
 {
@@ -24,29 +29,8 @@ int main(int argc, char const *argv[])
   // experiment3();
   // experiment4();
   // experiment5();
-  experiment6();
-
-  // uint32_t U = 1000000;
-  // float p = 0.01;
-  // __type *A = create(U, p);
-  // cout << count_one(A, U) << " : " << U * p << endl;
-
-  // uint32_t c = 0;
-  // for (int i = 0; i < U; i++)
-  //   c += get(A, i);
-  // cout << c << endl;
-
-  // float p1 = 0.005;
-  // float p2 = 0.01;
-  // __type *B = perturbate(A, U, p1, p2);
-
-  // uint32_t sizeA = count_one(A, U);
-  // uint32_t sizeB = count_one(B, U);
-
-  // cout << sizeB << " " << sizeA - sizeA * p1 + (U - sizeA) * p2 << endl;
-
-  // cout << jaccard_sim(A, B, U) << endl;
-
+  // experiment6();
+  experiment7("dataset_Slashdot0811.txt", 0.1, 70, 3);
   return 0;
 }
 
@@ -271,7 +255,7 @@ void experiment6()
     double err_DSS = 0.0;
     double err_min_hash = 0.0;
 
-#pragma omp parallel for //reduction(+ : err_DMH, err_DSS)
+#pragma omp parallel for // reduction(+ : err_DMH, err_DSS)
     for (int n = 0; n < n_test; n++)
     {
       err_DMH = SE_DMH(k, l, U, p1, p2, (Hash<uint32_t> **)hashes);
@@ -286,4 +270,131 @@ void experiment6()
     // err_min_hash = sqrt(err_min_hash / (double)n_test);
     // printf("%f, %f, %f, %f\n", j, err_DMH, err_DSS, err_min_hash);
   }
+}
+
+/**
+ * Test ACP
+ */
+void experiment7(std::string fileName, double J, int b, int r)
+{
+  cout << "Loading dataset..." << endl;
+
+  // load data set
+  std::unordered_map<int, set<int> *> *sets = loadSetsFromFile(fileName);
+  vector<int> setIds;
+
+  for (auto itr = sets->begin(); itr != sets->end(); itr++)
+  {
+    set<int> *S = itr->second;
+    int id = itr->first;
+    setIds.push_back(id);
+  }
+
+  int n = sets->size();
+
+  // compute true positive
+  std::set<pair<int, int>> positive;
+  for (int i = 0; i < setIds.size() - 1; i++)
+  {
+    for (int j = i + 1; j < setIds.size(); j++)
+    {
+      auto A = sets->find(setIds[i])->second;
+      auto B = sets->find(setIds[j])->second;
+      if (jaccard(A, B) >= J)
+      {
+        if (setIds[i] > setIds[j])
+          positive.insert({setIds[j], setIds[i]});
+        else
+          positive.insert({setIds[i], setIds[j]});
+      }
+    }
+  }
+
+  // printf("There is %d pairs with JS >= %f\n", truePositive.size(), J);
+
+  cout << "Setup experiment..." << endl;
+
+  // define hash functions
+  int k = b * r;
+  int l = 1;
+  int c = k;
+  TabulationHash<uint32_t> **hashes = (TabulationHash<uint32_t> **)malloc((k * l) * sizeof(TabulationHash<uint32_t> *));
+  for (int i = 0; i < (k * l); i++)
+    hashes[i] = new TabulationHash<uint32_t>();
+
+  // PairWiseHash<uint32_t> *h1 = new PairWiseHash<uint32_t>();
+  PairWiseHash<uint32_t> *h1 = new PairWiseHash<uint32_t>();
+  PairWiseHash<uint32_t> *h2 = new PairWiseHash<uint32_t>(c);
+
+  // create sketche
+  uint32_t **signaturesBMH = (uint32_t **)malloc(sizeof(uint32_t *) * n);
+  uint32_t **signaturesDSS = (uint32_t **)malloc(sizeof(uint32_t *) * n);
+  int i = 0;
+
+  for (auto itr = sets->begin(); itr != sets->end(); itr++)
+  {
+    set<int> *set = itr->second;
+    int id = itr->first;
+
+    TreeKLMinhash *S1 = new TreeKLMinhash(k, l, UINT32_MAX, (Hash<uint32_t> **)hashes, false);
+    DSS *S2 = new DSS(c, h1, h2, (Hash<uint32_t> **)hashes, k, false);
+
+    for (auto el = set->begin(); el != set->end(); el++)
+    {
+      S1->insert(*el);
+      S2->insert(*el);
+    }
+
+    signaturesBMH[i] = S1->getSignature();
+    signaturesDSS[i] = S2->getSignature();
+    i++;
+  }
+
+  cout << "Starting LSH..." << endl;
+
+  // compute LSH
+  cout << "NOI" << endl;
+  unordered_set<pair<int, int>, hash_pair> *candidatePairsBMH = computeLSH(signaturesBMH, n, r, b);
+  cout << "SORELLA" << endl;
+  unordered_set<pair<int, int>, hash_pair> *candidatePairsDSS = computeLSH(signaturesDSS, n, r, b);
+
+  cout << "Effective pairs:" << positive.size() << endl;
+  cout << "BMH pairs:" << candidatePairsBMH->size() << endl;
+  cout << "DSS pairs:" << candidatePairsDSS->size() << endl
+       << endl;
+
+  // compute statistics
+  int TP_BMH = 0;
+  for (auto itr = candidatePairsBMH->begin(); itr != candidatePairsBMH->end(); itr++)
+  {
+    TP_BMH += (positive.find({setIds[itr->first], setIds[itr->second]}) != positive.end()) || (positive.find({setIds[itr->second], setIds[itr->first]}) != positive.end());
+  }
+  int FP_BMH = candidatePairsBMH->size() - TP_BMH;
+  int FN_BMH = positive.size() - TP_BMH;
+
+  int TP_DSS = 0;
+  for (auto itr = candidatePairsDSS->begin(); itr != candidatePairsDSS->end(); itr++)
+  {
+    if ((positive.find({setIds[itr->first], setIds[itr->second]}) != positive.end()) || (positive.find({setIds[itr->second], setIds[itr->first]}) != positive.end()))
+    {
+      TP_DSS++;
+    }
+  }
+  int FP_DSS = candidatePairsDSS->size() - TP_DSS;
+  int FN_DSS = positive.size() - TP_DSS;
+
+  // compute precision and recall
+  double precision_BMH = ((double)TP_BMH) / ((double)TP_BMH + FP_BMH);
+  double recall_BMH = ((double)TP_BMH) / ((double)TP_BMH + FN_BMH);
+  double F1_BMH = 2 * (precision_BMH * recall_BMH) / (precision_BMH + recall_BMH);
+
+  double precision_DSS = ((double)TP_DSS) / ((double)TP_DSS + FP_DSS);
+  double recall_DSS = ((double)TP_DSS) / ((double)TP_DSS + FN_DSS);
+  double F1_DSS = 2 * (precision_DSS * recall_DSS) / (precision_DSS + recall_DSS);
+
+  cout << "Buffered MinHash" << endl;
+  printf("Precision: %f\nRecall: %f\nF1: %f\n\n", precision_BMH, recall_BMH, F1_BMH);
+
+  cout << "Sorella" << endl;
+  printf("Precision: %f\nRecall: %f\nF1: %f\n\n", precision_DSS, recall_DSS, F1_DSS);
 }
