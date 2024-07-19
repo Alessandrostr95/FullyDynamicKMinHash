@@ -173,10 +173,10 @@ public:
      * Returns the signature of the sketch, as the t-minhash signature of
      * the row corresponding to the index log2(size)
      */
-    uint32_t *getSignature()
+    uint32_t *getSignature(double alpha = 1.0, double r = 1.0)
     {
-        int row = static_cast<int>(log2(this->size));
-        return minHash(row);
+        int row = static_cast<uint>(log2(alpha * r * this->size));
+        return minHash(max(0, (int)row));
     }
 
     /**

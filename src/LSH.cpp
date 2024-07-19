@@ -45,6 +45,14 @@ uint32_t XorIt(uint32_t *sequence, int size)
     return h;
 }
 
+/**
+ * Compute the Locality Sensitive Hashing of the signatures
+ * @param signatures the signatures of the elements
+ * @param n the number of elements
+ * @param r the number of elements in each band
+ * @param b the number of bands
+ * @return the candidate pairs
+ */
 unordered_set<pair<int, int>, hash_pair> *computeLSH(uint32_t **signatures, int n, int r, int b)
 {
     unordered_multimap<string, int> *H = new unordered_multimap<string, int>[b];
@@ -77,7 +85,7 @@ unordered_set<pair<int, int>, hash_pair> *computeLSH(uint32_t **signatures, int 
         // }
         // cout << endl;
 
-        // cout << "BAND: " << j << endl;
+        std::clog << "\rBand: " << j << ", Candidates: " << candidatePairs->size() << "    " << std::flush;
 
         for (auto key = seenKeys[j].begin(); key != seenKeys[j].end(); key++)
         {
@@ -101,6 +109,7 @@ unordered_set<pair<int, int>, hash_pair> *computeLSH(uint32_t **signatures, int 
             }
         }
     }
+    cerr << endl;
 
     delete[] H;
     delete[] seenKeys;

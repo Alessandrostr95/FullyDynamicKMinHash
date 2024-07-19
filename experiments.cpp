@@ -20,7 +20,8 @@ void experiment3();
 void experiment4();
 void experiment5();
 void experiment6();
-void experiment7(string, double, int, int);
+void experiment7(std::string, double, int, int, int, int);
+void datasetStatistics(std::string);
 
 int main(int argc, char const *argv[])
 {
@@ -30,7 +31,16 @@ int main(int argc, char const *argv[])
   // experiment4();
   // experiment5();
   // experiment6();
-  experiment7("dataset_Slashdot0811.txt", 0.1, 70, 3);
+  std::string datasetName = "dataset/dataset_soc-LiveJournal1.txt";
+  // datasetName = "dataset/dataset_d=2_soc-LiveJournal1.txt";
+  // datasetName = "dataset_Slashdot0811.txt";
+  int b = 700;
+  int r = 3;
+  int m = 420;
+  int l = 5;
+  double J = 0.1;
+  experiment7(datasetName, J, b, r, m, l);
+  // datasetStatistics(datasetName);
   return 0;
 }
 
@@ -274,13 +284,20 @@ void experiment6()
 
 /**
  * Test ACP
+ * This experiment performs All Candidate Pairs (ACP) on a dataset, using Buffered MinHash (BMH) and DSS sketches.
+ * @param datasetName the name of the dataset
+ * @param J the Jaccard similarity threshold. Pairs with Jaccard similarity greater than or equal to J are considered positive.
+ * @param b the number of bands for BMH
+ * @param r the number of elements for each band in BMH
+ * @param m the number of bands for DSS
+ * @param l the number of elements for each band in DSS
  */
-void experiment7(std::string fileName, double J, int b, int r)
+void experiment7(std::string datasetName, double J, int b, int r, int m, int l)
 {
-  cout << "Loading dataset..." << endl;
+  cout << "Loading dataset... ";
 
   // load data set
-  std::unordered_map<int, set<int> *> *sets = loadSetsFromFile(fileName);
+  std::unordered_map<int, set<int> *> *sets = loadSetsFromFile(datasetName);
   vector<int> setIds;
 
   for (auto itr = sets->begin(); itr != sets->end(); itr++)
@@ -290,36 +307,49 @@ void experiment7(std::string fileName, double J, int b, int r)
     setIds.push_back(id);
   }
 
+  cout << "DONE!" << endl
+       << endl;
+
+  cout << "Computing all Jaccard similarities... " << std::flush;
+
   int n = sets->size();
 
   // compute true positive
-  std::set<pair<int, int>> positive;
+  // std::set<pair<int, int>> positive;
+  double **positiveMatrix = (double **)malloc(sizeof(double *) * n);
+  int effectivePositive = 0;
+
+  for (int i = 0; i < n; i++)
+    positiveMatrix[i] = (double *)malloc(sizeof(double) * n);
+
+#pragma omp parallel for schedule(dynamic, 1) reduction(+ : effectivePositive)
   for (int i = 0; i < setIds.size() - 1; i++)
   {
     for (int j = i + 1; j < setIds.size(); j++)
     {
       auto A = sets->find(setIds[i])->second;
       auto B = sets->find(setIds[j])->second;
-      if (jaccard(A, B) >= J)
-      {
-        if (setIds[i] > setIds[j])
-          positive.insert({setIds[j], setIds[i]});
-        else
-          positive.insert({setIds[i], setIds[j]});
-      }
+      positiveMatrix[i][j] = jaccard(A, B);
+      effectivePositive += positiveMatrix[i][j] >= J;
+      // if (jaccard(A, B) >= J)
+      // {
+      //   if (setIds[i] > setIds[j])
+      //     positive.insert({setIds[j], setIds[i]});
+      //   else
+      //     positive.insert({setIds[i], setIds[j]});
+      // }
     }
   }
 
-  // printf("There is %d pairs with JS >= %f\n", truePositive.size(), J);
-
-  cout << "Setup experiment..." << endl;
-
+  cout << "DONE!" << endl
+       << endl;
+  cout << "Setup experiment..." << std::flush;
   // define hash functions
   int k = b * r;
-  int l = 1;
   int c = k;
-  TabulationHash<uint32_t> **hashes = (TabulationHash<uint32_t> **)malloc((k * l) * sizeof(TabulationHash<uint32_t> *));
-  for (int i = 0; i < (k * l); i++)
+
+  TabulationHash<uint32_t> **hashes = (TabulationHash<uint32_t> **)malloc(k * sizeof(TabulationHash<uint32_t> *));
+  for (int i = 0; i < k; i++)
     hashes[i] = new TabulationHash<uint32_t>();
 
   // PairWiseHash<uint32_t> *h1 = new PairWiseHash<uint32_t>();
@@ -336,7 +366,7 @@ void experiment7(std::string fileName, double J, int b, int r)
     set<int> *set = itr->second;
     int id = itr->first;
 
-    TreeKLMinhash *S1 = new TreeKLMinhash(k, l, UINT32_MAX, (Hash<uint32_t> **)hashes, false);
+    TreeKLMinhash *S1 = new TreeKLMinhash(k, 1, UINT32_MAX, (Hash<uint32_t> **)hashes, false);
     DSS *S2 = new DSS(c, h1, h2, (Hash<uint32_t> **)hashes, k, false);
 
     for (auto el = set->begin(); el != set->end(); el++)
@@ -346,19 +376,31 @@ void experiment7(std::string fileName, double J, int b, int r)
     }
 
     signaturesBMH[i] = S1->getSignature();
-    signaturesDSS[i] = S2->getSignature();
+    signaturesDSS[i] = S2->getSignature(.1, J);
     i++;
   }
+
+  cout << "DONE!" << endl;
+  cout << "Parameters:" << endl
+       << "\tBuffered MinHash: b=" << b << ", r=" << r << endl
+       << "\tDSS: m=" << m << ", l=" << l << endl
+       << "\tJaccard similarity threshold: " << J << endl
+       << endl
+       << endl;
 
   cout << "Starting LSH..." << endl;
 
   // compute LSH
-  cout << "NOI" << endl;
+  cout << endl
+       << "Buffered Minhash:" << endl;
   unordered_set<pair<int, int>, hash_pair> *candidatePairsBMH = computeLSH(signaturesBMH, n, r, b);
-  cout << "SORELLA" << endl;
-  unordered_set<pair<int, int>, hash_pair> *candidatePairsDSS = computeLSH(signaturesDSS, n, r, b);
+  cout << endl
+       << "DSS:" << endl;
+  unordered_set<pair<int, int>, hash_pair> *candidatePairsDSS = computeLSH(signaturesDSS, n, m, l);
+  cout << endl;
 
-  cout << "Effective pairs:" << positive.size() << endl;
+  // cout << "Effective pairs:" << positive.size() << endl;
+  cout << "Effective pairs:" << effectivePositive << endl;
   cout << "BMH pairs:" << candidatePairsBMH->size() << endl;
   cout << "DSS pairs:" << candidatePairsDSS->size() << endl
        << endl;
@@ -367,34 +409,114 @@ void experiment7(std::string fileName, double J, int b, int r)
   int TP_BMH = 0;
   for (auto itr = candidatePairsBMH->begin(); itr != candidatePairsBMH->end(); itr++)
   {
-    TP_BMH += (positive.find({setIds[itr->first], setIds[itr->second]}) != positive.end()) || (positive.find({setIds[itr->second], setIds[itr->first]}) != positive.end());
+    // TP_BMH += (positive.find({setIds[itr->first], setIds[itr->second]}) != positive.end()) || (positive.find({setIds[itr->second], setIds[itr->first]}) != positive.end());
+    TP_BMH += (positiveMatrix[itr->first][itr->second] >= J) || (positiveMatrix[itr->second][itr->first] >= J);
   }
   int FP_BMH = candidatePairsBMH->size() - TP_BMH;
-  int FN_BMH = positive.size() - TP_BMH;
+  // int FN_BMH = positive.size() - TP_BMH;
+  int FN_BMH = effectivePositive - TP_BMH;
+  int TN_BMH = (n * (n - 1) / 2) - TP_BMH - FP_BMH - FN_BMH;
 
   int TP_DSS = 0;
   for (auto itr = candidatePairsDSS->begin(); itr != candidatePairsDSS->end(); itr++)
   {
-    if ((positive.find({setIds[itr->first], setIds[itr->second]}) != positive.end()) || (positive.find({setIds[itr->second], setIds[itr->first]}) != positive.end()))
-    {
-      TP_DSS++;
-    }
+    // if ((positive.find({setIds[itr->first], setIds[itr->second]}) != positive.end()) || (positive.find({setIds[itr->second], setIds[itr->first]}) != positive.end()))
+    // {
+    //   TP_DSS++;
+    // }
+    TP_DSS += (positiveMatrix[itr->first][itr->second] >= J) || (positiveMatrix[itr->second][itr->first] >= J);
   }
   int FP_DSS = candidatePairsDSS->size() - TP_DSS;
-  int FN_DSS = positive.size() - TP_DSS;
+  // int FN_DSS = positive.size() - TP_DSS;
+  int FN_DSS = effectivePositive - TP_DSS;
+  int TN_DSS = (n * (n - 1) / 2) - TP_DSS - FP_DSS - FN_DSS;
 
   // compute precision and recall
   double precision_BMH = ((double)TP_BMH) / ((double)TP_BMH + FP_BMH);
   double recall_BMH = ((double)TP_BMH) / ((double)TP_BMH + FN_BMH);
+  // double accuracy_BMH = ((double)TP_BMH + (n * (n - 1) / 2) - positive.size() - FP_BMH) / ((double)(n * (n - 1) / 2));
+  double accuracy_BMH = ((double)TP_BMH + TN_BMH) / ((double)(n * (n - 1) / 2));
+  double error_BMH = 1.0 - accuracy_BMH;
   double F1_BMH = 2 * (precision_BMH * recall_BMH) / (precision_BMH + recall_BMH);
 
   double precision_DSS = ((double)TP_DSS) / ((double)TP_DSS + FP_DSS);
   double recall_DSS = ((double)TP_DSS) / ((double)TP_DSS + FN_DSS);
+  // double accuracy_DSS = ((double)TP_DSS + (n * (n - 1) / 2) - positive.size() - FP_DSS) / ((double)(n * (n - 1) / 2));
+  double accuracy_DSS = ((double)TP_DSS + TN_DSS) / ((double)(n * (n - 1) / 2));
+  double error_DSS = 1.0 - accuracy_DSS;
   double F1_DSS = 2 * (precision_DSS * recall_DSS) / (precision_DSS + recall_DSS);
 
   cout << "Buffered MinHash" << endl;
-  printf("Precision: %f\nRecall: %f\nF1: %f\n\n", precision_BMH, recall_BMH, F1_BMH);
+  printf("Precision: %f\nRecall: %f\nAccuracy: %f\nError: %f\nF1: %f\n\n", precision_BMH, recall_BMH, accuracy_BMH, error_BMH, F1_BMH);
 
   cout << "Sorella" << endl;
-  printf("Precision: %f\nRecall: %f\nF1: %f\n\n", precision_DSS, recall_DSS, F1_DSS);
+  printf("Precision: %f\nRecall: %f\nAccuracy: %f\nError: %f\nF1: %f\n\n", precision_DSS, recall_DSS, accuracy_DSS, error_DSS, F1_DSS);
+}
+
+/**
+ * This function computes statistics about the dataset
+ * @param datasetName the name of the dataset
+ * @return void
+ */
+void datasetStatistics(std::string datasetName)
+{
+  cout << "Loading dataset..." << endl;
+
+  // load data set
+  std::unordered_map<int, set<int> *> *sets = loadSetsFromFile(datasetName);
+  vector<int> setIds;
+
+  int maxSize = 0;
+  int minSize = INT_MAX;
+  double avgSize = 0.0;
+  int n = sets->size();
+
+  for (auto itr = sets->begin(); itr != sets->end(); itr++)
+  {
+    set<int> *S = itr->second;
+    int id = itr->first;
+    setIds.push_back(id);
+
+    maxSize = max(maxSize, (int)S->size());
+    minSize = min(minSize, (int)S->size());
+    avgSize += S->size();
+  }
+
+  avgSize /= n;
+
+  cout << "Dataset statistics" << endl;
+  cout << "Number of sets: " << n << endl;
+  cout << "Max size: " << maxSize << endl;
+  cout << "Min size: " << minSize << endl;
+  cout << "Avg size: " << avgSize << endl
+       << endl;
+
+  cout << "Computing other statistics..." << endl;
+  // compute true positive
+  double **positiveMatrix = (double **)malloc(sizeof(double *) * n);
+  int effectivePositive[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  float fractions[10] = {0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5};
+
+  for (int i = 0; i < n; i++)
+    positiveMatrix[i] = (double *)malloc(sizeof(double) * n);
+
+#pragma omp parallel for schedule(dynamic, 1) reduction(+ : effectivePositive)
+  for (int i = 0; i < setIds.size() - 1; i++)
+  {
+    for (int j = i + 1; j < setIds.size(); j++)
+    {
+      auto A = sets->find(setIds[i])->second;
+      auto B = sets->find(setIds[j])->second;
+      positiveMatrix[i][j] = jaccard(A, B);
+
+      for (int k = 0; k < 10; k++)
+        effectivePositive[k] += positiveMatrix[i][j] >= fractions[k];
+    }
+  }
+
+  cout << "Effective pairs:" << n * (n - 1) / 2 << endl;
+
+  cout << "Pairs with Jaccard similarity greater than or equal to:" << endl;
+  for (int i = 0; i < 10; i++)
+    printf("\t%.2f: %d pairs ~ %.4f%%\n", fractions[i], effectivePositive[i], (effectivePositive[i] / (double)(n * (n - 1) / 2)) * 100);
 }
