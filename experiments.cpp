@@ -396,7 +396,7 @@ void experiment7(std::string datasetName, double J, int b, int r, int m, int l)
   unordered_set<pair<int, int>, hash_pair> *candidatePairsBMH = computeLSH(signaturesBMH, n, r, b);
   cout << endl
        << "DSS:" << endl;
-  unordered_set<pair<int, int>, hash_pair> *candidatePairsDSS = computeLSH(signaturesDSS, n, m, l);
+  unordered_set<pair<int, int>, hash_pair> *candidatePairsDSS = computeLSH(signaturesDSS, n, l, m);
   cout << endl;
 
   // cout << "Effective pairs:" << positive.size() << endl;
