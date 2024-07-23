@@ -91,15 +91,15 @@ void singleSetImplicit(int k, int l, int N)
     delete[] sample;
 }
 
-/**00, 15.401396
-1024, 32, 131072, 1024, 0.20, 13.
- * @todo add documentation
- *
- * k: number of hash functions
- * l: size of the buffers
- * U: size of the universe
- * N: 2*N is the number of operations
- * max_size: size of the sliding window
+/**
+ * This experiment evaluates the performance of the BufferKLMinhash sketch.
+ * The sketch is created with k buffers of size l.
+ * This experiment performs a sequence of insertions and removals, following a sliding window model.
+ * @param k number of hash functions
+ * @param l size of the buffers
+ * @param U size of the universe
+ * @param N 2*N is the number of operations
+ * @param max_size size of the sliding window
  */
 void slidingWindowMinHash(int k, int l, uint32_t U, int N, int max_size)
 {
