@@ -25,21 +25,21 @@ void datasetStatistics(std::string);
 
 int main(int argc, char const *argv[])
 {
+  // example of usage
   // experiment1();
   // experiment2();
   // experiment3();
   // experiment4();
   // experiment5();
   // experiment6();
-  std::string datasetName = "dataset/dataset_soc-LiveJournal1.txt";
-  // datasetName = "dataset/dataset_d=2_soc-LiveJournal1.txt";
-  // datasetName = "dataset_Slashdot0811.txt";
-  int b = 700;
-  int r = 3;
-  int m = 420;
-  int l = 5;
-  double J = 0.1;
-  experiment7(datasetName, J, b, r, m, l);
+  // std::string datasetName = "dataset/dataset_soc-LiveJournal1.txt";
+  // std::string datasetName = "dataset/dataset_com-orkut.ungraph.txt";
+  // int b = 300;
+  // int r = 3;
+  // int m = 150;
+  // int l = 6;
+  // double J = 0.1;
+  // experiment7(datasetName, J, b, r, m, l);
   // datasetStatistics(datasetName);
   return 0;
 }
