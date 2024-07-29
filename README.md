@@ -12,3 +12,9 @@ The structure of the repository is as follows:
 - `src/test/`: contains the test files.
 - `experiments.cpp`: experiments to evaluate the performance of the $\ell$-buffered $k$-MinHash, DSS and proactive DSS sketches.
 - `dataset/dataset.py`: script to generate the dataset used in the experiments.
+
+# How to compile
+To compile the project, run the following command:
+```bash
+g++ experiments.cpp -O3 -mavx -fopenmp
+```
