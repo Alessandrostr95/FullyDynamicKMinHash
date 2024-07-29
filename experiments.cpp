@@ -52,7 +52,6 @@ void experiment1()
   uint32_t U = UINT32_MAX;
   int K[4] = {1, 100, 1000, 2000};
   int N = 1 << 16;
-  // int N = 1 << 10;
   int n_tests = 8;
 
 #pragma omp parallel for collapse(2)
